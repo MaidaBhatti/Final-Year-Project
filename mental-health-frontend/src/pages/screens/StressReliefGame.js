@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 
 const getRandom = (min, max) => Math.floor(Math.random() * (max - min) + min);
 
@@ -41,25 +42,23 @@ const GAME_TIME = 20; // seconds
 
 const StressReliefGame = () => {
   const [score, setScore] = useState(0);
+  const [level, setLevel] = useState(1); // Add levels
   const [bubbles, setBubbles] = useState(Array(7).fill({ id: Math.random(), popping: false }));
   const [timeLeft, setTimeLeft] = useState(GAME_TIME);
   const [gameActive, setGameActive] = useState(false);
   const [highScore, setHighScore] = useState(() => Number(localStorage.getItem('bubbleHighScore')) || 0);
   const [scoreAnim, setScoreAnim] = useState(false);
+  const [gameStartTime, setGameStartTime] = useState(null); // Track start time
   const timerRef = useRef();
 
   useEffect(() => {
     if (gameActive && timeLeft > 0) {
       timerRef.current = setTimeout(() => setTimeLeft(t => t - 1), 1000);
-    } else if (timeLeft === 0) {
-      setGameActive(false);
-      if (score > highScore) {
-        setHighScore(score);
-        localStorage.setItem('bubbleHighScore', score);
-      }
+    } else if (timeLeft === 0 && gameActive) {
+      handleEndGame();
     }
     return () => clearTimeout(timerRef.current);
-  }, [gameActive, timeLeft, score, highScore]);
+  }, [gameActive, timeLeft]);
 
   const popBubble = idx => {
     if (!gameActive) return;
@@ -68,7 +67,11 @@ const StressReliefGame = () => {
         i === idx ? { ...b, popping: true } : b
       )
     );
-    setScore(s => s + 1);
+    setScore(s => {
+      const newScore = s + 1;
+      if (newScore % 10 === 0) setLevel(prev => prev + 1); // Every 10 pops = new level
+      return newScore;
+    });
     setScoreAnim(true);
     setTimeout(() => {
       setBubbles(bubs =>
@@ -78,18 +81,39 @@ const StressReliefGame = () => {
       );
       setScoreAnim(false);
     }, 180);
-    // Optional: Play pop sound
-    // new Audio('/pop.mp3').play();
   };
 
   const startGame = () => {
     setScore(0);
+    setLevel(1);
     setTimeLeft(GAME_TIME);
     setGameActive(true);
+    setGameStartTime(Date.now());
     setBubbles(Array(7).fill({ id: Math.random(), popping: false }));
   };
 
-  // Animated background bubbles
+  const handleEndGame = async () => {
+    setGameActive(false);
+    const duration = Math.floor((Date.now() - gameStartTime) / 1000);
+
+    if (score > highScore) {
+      setHighScore(score);
+      localStorage.setItem('bubbleHighScore', score);
+    }
+
+    try {
+      const token = localStorage.getItem('token'); // Assuming token is saved
+      await axios.post(
+        'http://localhost:5000/api/stats/game/end',
+        { score, level, duration },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      console.log('Game stats saved!');
+    } catch (error) {
+      console.error('Failed to save game stats:', error);
+    }
+  };
+
   const bgBubbles = Array(12).fill(0).map((_, i) => (
     <div
       key={i}
@@ -112,7 +136,7 @@ const StressReliefGame = () => {
     <div
       style={{
         position: 'relative',
-        height: 440,
+        height: 480,
         background: 'linear-gradient(135deg, #e0f7fa 60%, #b2ebf2 100%)',
         borderRadius: 20,
         margin: 24,
@@ -125,7 +149,7 @@ const StressReliefGame = () => {
     >
       {bgBubbles}
       <h2 style={{ textAlign: 'center', color: '#00796b', marginTop: 18, letterSpacing: 1, zIndex: 3, position: 'relative' }}>
-        Pop the Bubbles!
+        Pop the Bubbles! (Level {level})
       </h2>
       <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginBottom: 6, zIndex: 3, position: 'relative' }}>
         <div style={{ fontSize: 18 }}>
@@ -150,9 +174,28 @@ const StressReliefGame = () => {
         Score: {score}
       </div>
       {gameActive ? (
-        bubbles.map((b, idx) => (
-          <Bubble key={b.id} onPop={() => popBubble(idx)} popping={b.popping} />
-        ))
+        <>
+          {bubbles.map((b, idx) => (
+            <Bubble key={b.id} onPop={() => popBubble(idx)} popping={b.popping} />
+          ))}
+          <div style={{ textAlign: 'center', marginTop: 10 }}>
+            <button
+              onClick={handleEndGame}
+              style={{
+                padding: '10px 20px',
+                fontSize: 18,
+                background: 'linear-gradient(90deg,#d32f2f,#f57c00)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 12,
+                cursor: 'pointer',
+                marginTop: 20,
+              }}
+            >
+              End Game
+            </button>
+          </div>
+        </>
       ) : (
         <div style={{ textAlign: 'center', marginTop: 70, zIndex: 3, position: 'relative' }}>
           {timeLeft === 0 && (
@@ -175,8 +218,6 @@ const StressReliefGame = () => {
               fontWeight: 600,
               letterSpacing: 1,
             }}
-            onMouseEnter={e => e.currentTarget.style.background = '#0097a7'}
-            onMouseLeave={e => e.currentTarget.style.background = 'linear-gradient(90deg,#00bfae,#00b8d4)'}
           >
             {timeLeft === 0 ? 'Try Again' : 'Start Game'}
           </button>

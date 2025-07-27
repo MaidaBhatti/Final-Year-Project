@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, FlatList, Animated, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, Animated, Image, Dimensions, SafeAreaView } from 'react-native';
 import { Audio } from 'expo-av';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const { width, height } = Dimensions.get('window');
 
 const BreathingScreen = () => {
   const [breaths, setBreaths] = useState(0);
@@ -42,6 +45,7 @@ const BreathingScreen = () => {
           setBreaths((prevBreaths) => prevBreaths + 1);
           playSound();
           setTimer(0);
+          storeBreathingCycle(1); // <-- Add this line
         }
         startBreathAnimation();
       }
@@ -119,93 +123,126 @@ const BreathingScreen = () => {
     </Text>
   );
 
+  const storeBreathingCycle = async (cycles = 1) => {
+    try {
+      const token = await AsyncStorage.getItem('token'); // Or use SecureStore if you prefer
+      await fetch('http://localhost:5000/api/stats/breathing', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ cycles }),
+      });
+    } catch (error) {
+      console.log('Error storing breathing cycle:', error);
+    }
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Breath Practice</Text>
-      <Animated.View style={[styles.breathCircle, { transform: [{ scale: breathAnimation }] }]}>
-        <Image source={require('../assets/image.gif')} style={styles.gif} />
-      </Animated.View>
-      <Animated.Text style={[styles.breathText, { opacity: textOpacity }]}>
-        {isBreathingIn ? 'Inhale' : 'Exhale'}
-      </Animated.Text>
-      <Text style={styles.breathCount}>Breaths: {breaths}</Text>
-      <TouchableOpacity
-        style={[styles.button, isStarted && styles.stopButton]}
-        onPress={isStarted ? handleStop : handleStart}
-      >
-        <Text style={styles.buttonText}>{isStarted ? 'Stop' : 'Start'}</Text>
-      </TouchableOpacity>
-      <FlatList
-        data={breathDurations}
-        renderItem={renderBreathItem}
-        keyExtractor={(item, index) => index.toString()}
-        style={styles.breathList}
-      />
-    </View>
+    <SafeAreaView style={styles.safeContainer}>
+      <View style={styles.container}>
+        <Text style={styles.title}>Breath Practice</Text>
+        <Animated.View style={[
+          styles.breathCircle,
+          { 
+            transform: [{ scale: breathAnimation }],
+            width: width * 0.5,
+            height: width * 0.5,
+            borderRadius: (width * 0.5) / 2,
+            bottom: height * 0.25,
+          }
+        ]}>
+          <Image source={require('../assets/image.gif')} style={styles.gif} />
+        </Animated.View>
+        <Animated.Text style={[styles.breathText, { opacity: textOpacity }]}>
+          {isBreathingIn ? 'Inhale' : 'Exhale'}
+        </Animated.Text>
+        <Text style={styles.breathCount}>Breaths: {breaths}</Text>
+        <TouchableOpacity
+          style={[styles.button, isStarted && styles.stopButton]}
+          onPress={isStarted ? handleStop : handleStart}
+        >
+          <Text style={styles.buttonText}>{isStarted ? 'Stop' : 'Start'}</Text>
+        </TouchableOpacity>
+        <FlatList
+          data={breathDurations}
+          renderItem={renderBreathItem}
+          keyExtractor={(item, index) => index.toString()}
+          style={styles.breathList}
+        />
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeContainer: {
+    flex: 1,
+    backgroundColor: '#FFC0CB',
+  },
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFC0CB', // Pink background
+    paddingHorizontal: width * 0.05,
   },
   title: {
-    fontSize: 24,
+    fontSize: width * 0.07,
     fontWeight: 'bold',
     color: '#FFF',
-    marginBottom: 20,
+    marginBottom: height * 0.03,
+    textAlign: 'center',
   },
   breathCircle: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
     backgroundColor: 'rgba(255, 107, 107, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: height * 0.03,
     position: 'absolute',
-    bottom: '25%',
   },
   gif: {
     width: '100%',
     height: '100%',
-    borderRadius: 100,
+    borderRadius: 1000, // large value for full roundness
   },
   breathText: {
-    fontSize: 24,
+    fontSize: width * 0.06,
     color: '#FFF',
-    marginBottom: 20,
+    marginBottom: height * 0.03,
+    textAlign: 'center',
   },
   breathCount: {
-    fontSize: 20,
+    fontSize: width * 0.05,
     color: '#FFF',
-    marginBottom: 20,
+    marginBottom: height * 0.02,
+    textAlign: 'center',
   },
   button: {
-    padding: 15,
+    paddingVertical: height * 0.02,
+    paddingHorizontal: width * 0.15,
     backgroundColor: '#add8e6',
     borderRadius: 10,
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: height * 0.02,
   },
   stopButton: {
     backgroundColor: '#ff6b6b',
   },
   buttonText: {
-    fontSize: 18,
+    fontSize: width * 0.045,
     color: '#fff',
   },
   breathList: {
-    marginTop: 20,
-    width: '80%',
+    marginTop: height * 0.02,
+    width: '90%',
+    alignSelf: 'center',
   },
   breathItem: {
-    fontSize: 16,
+    fontSize: width * 0.04,
     color: '#FFF',
-    marginVertical: 5,
+    marginVertical: height * 0.005,
+    textAlign: 'center',
   },
 });
 

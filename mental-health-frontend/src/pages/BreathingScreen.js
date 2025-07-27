@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 
 const phases = [
   { label: 'Inhale', duration: 4000, color: '#f594bd' },
@@ -12,9 +13,31 @@ const totalPhases = phases.length;
 const BreathingScreen = () => {
   const [phaseIndex, setPhaseIndex] = useState(0);
   const [progress, setProgress] = useState(0);
-  const [cycleCount, setCycleCount] = useState(0);
+  const [cycleCount, setCycleCount] = useState(0); // Local session count
+  const [totalCycles, setTotalCycles] = useState(0); // Total from DB
   const intervalRef = useRef(null);
 
+  // Fetch total breathing cycles from DB on component mount
+  useEffect(() => {
+    const fetchTotalCycles = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const res = await axios.get('http://localhost:5000/api/stats/breathing', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        setTotalCycles(res.data.cycles || 0);
+      } catch (err) {
+        console.error('Error fetching total breathing cycles:', err);
+      }
+    };
+
+    fetchTotalCycles();
+  }, []);
+
+  // Handle breathing phases
   useEffect(() => {
     setProgress(0);
     const { duration } = phases[phaseIndex];
@@ -27,7 +50,10 @@ const BreathingScreen = () => {
         clearInterval(intervalRef.current);
         setTimeout(() => {
           if (phaseIndex === totalPhases - 1) {
-            setCycleCount(cycleCount + 1);
+            const newCycleCount = cycleCount + 1;
+            setCycleCount(newCycleCount);
+            saveBreathingCycle(); // Save to backend
+            setTotalCycles(prev => prev + 1); // Update total on UI
             setPhaseIndex(0);
           } else {
             setPhaseIndex(phaseIndex + 1);
@@ -40,9 +66,25 @@ const BreathingScreen = () => {
     // eslint-disable-next-line
   }, [phaseIndex, cycleCount]);
 
+  const saveBreathingCycle = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      await axios.post(
+        'http://localhost:5000/api/stats/breathing',
+        { cycles: 1 },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      console.log('Breathing cycle saved.');
+    } catch (error) {
+      console.error('Error saving breathing cycle:', error);
+    }
+  };
+
   const { label, color } = phases[phaseIndex];
 
-  // Animate circle size for inhale/exhale
+  // Animate circle size
   const minSize = 120;
   const maxSize = 240;
   let circleSize = minSize;
@@ -57,7 +99,12 @@ const BreathingScreen = () => {
   return (
     <div style={styles.container}>
       <h2 style={styles.heading}>Breathing Exercise</h2>
-      <div style={styles.cycleText}>Cycles completed: <b>{cycleCount}</b></div>
+      <div style={styles.cycleText}>
+        Session cycles: <b>{cycleCount}</b>
+      </div>
+      <div style={styles.cycleText}>
+        Total cycles (all time): <b>{totalCycles}</b>
+      </div>
       <div style={styles.breathingArea}>
         <div
           style={{
@@ -73,7 +120,7 @@ const BreathingScreen = () => {
         </div>
       </div>
       <button style={styles.button} onClick={() => setCycleCount(0)}>
-        Reset Cycles
+        Reset Session
       </button>
     </div>
   );
@@ -98,7 +145,7 @@ const styles = {
   },
   cycleText: {
     color: '#333',
-    marginBottom: '1.5rem',
+    marginBottom: '1rem',
     fontSize: '1.1rem',
   },
   breathingArea: {

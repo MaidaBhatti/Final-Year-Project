@@ -14,31 +14,42 @@ const pages = [
   { name: 'Music Player', path: '/musicplayer' },
   { name: 'Questions', path: '/questions' },
   { name: 'Breathing', path: '/breathing' },
-  { name: 'Medications', path: '/medications' }, // <-- Add this line
+  { name: 'Medications', path: '/medications' },
 ];
 
 const SideDrawer = () => {
   const { user, logout } = useContext(AuthContext);
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState({ username: '', image: '' });
   const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Fetch user data from your backend
-    axios.get('http://localhost:5000/api/dashboard')
-      .then(res => setUserData(res.data))
-      .catch(err => console.error(err));
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.warn('No token found');
+      setLoading(false);
+      return;
+    }
+
+    axios.get('http://localhost:5000/api/users/dashboard', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(res => {
+        setUserData(res.data);
+      })
+      .catch(err => console.error('Error fetching user data:', err))
+      .finally(() => setLoading(false));
   }, []);
 
-  // Get user image or fallback avatar
-  let imageUrl = userData.image
+  const imageUrl = userData.image
     ? `http://localhost:5000/${userData.image.replace(/\\/g, '/')}`
     : `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.username || 'User')}`;
 
   const handleLogout = () => {
     logout();
-    navigate('/'); // Redirect to Welcome screen
+    navigate('/');
   };
 
   return (
@@ -49,14 +60,18 @@ const SideDrawer = () => {
       <nav className={`side-drawer ${open ? 'open' : ''}`}>
         <button className="close-btn" onClick={() => setOpen(false)}>&times;</button>
         <div className="drawer-user">
-          <img
-            src={imageUrl}
-            alt="User"
-            className="drawer-avatar"
-            onError={e => { e.target.src = 'https://ui-avatars.com/api/?name=User'; }}
-          />
+          {loading ? (
+            <div className="skeleton-avatar" />
+          ) : (
+            <img
+              src={imageUrl}
+              alt="User"
+              className="drawer-avatar"
+              onError={e => { e.target.src = 'https://ui-avatars.com/api/?name=User'; }}
+            />
+          )}
           <div className="drawer-username">
-            {user ? (user.fullName || user.username || 'Guest') : 'Guest'}
+            {loading ? <div className="skeleton-text" /> : (userData.username || 'Guest')}
           </div>
         </div>
         <ul>

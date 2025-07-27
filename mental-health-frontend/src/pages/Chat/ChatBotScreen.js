@@ -21,6 +21,7 @@ const ChatBotScreen = () => {
 
     const newMessages = [...messages, newMessage];
     setMessages(newMessages);
+    storeChatMessage(message, 'user');
 
     setIsTyping(true);
     await sendMessageToChatBot(message);
@@ -36,6 +37,7 @@ const ChatBotScreen = () => {
         };
 
         setMessages((prevMessages) => [...prevMessages, apiResponseMessage]);
+        storeChatMessage(response.data.answer, 'ChatBot');
       } else {
         console.error('No response from chatbot API');
       }
@@ -43,6 +45,18 @@ const ChatBotScreen = () => {
       console.error('Error sending message to ChatBot API:', error);
     } finally {
       setIsTyping(false);
+    }
+  };
+
+  const storeChatMessage = async (message, sender) => {
+    try {
+      // If you use JWT, get token from localStorage or AsyncStorage
+      const token = localStorage.getItem('token');
+      await axios.post('http://localhost:5000/api/chat', { message, sender }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (error) {
+      console.error('Error storing chat message:', error);
     }
   };
 
