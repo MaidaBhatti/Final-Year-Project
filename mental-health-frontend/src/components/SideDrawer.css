@@ -1,0 +1,156 @@
+.drawer-toggle {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 1100;
+  background: #e69fa8;
+  color: #fff;
+  border: none;
+  font-size: 1.3rem; /* Reduced from 2rem to 1.3rem */
+  border-radius: 4px;
+  padding: 0.15em 0.45em; /* Slightly smaller padding */
+  cursor: pointer;
+}
+
+.side-drawer {
+  position: fixed;
+  left: -220px;
+  top: 0;
+  width: 200px;
+  height: 100%;
+  background: #222;
+  color: #fff;
+  padding-top: 60px;
+  transition: left 0.3s;
+  z-index: 1200;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+  overflow-y: auto; /* Add this line for vertical scroll */
+  scrollbar-width: thin; /* For Firefox */
+  scrollbar-color: #f594bd #222; /* For Firefox */
+}
+
+/* Optional: Style the scrollbar for Webkit browsers */
+.side-drawer::-webkit-scrollbar {
+  width: 8px;
+}
+
+.side-drawer::-webkit-scrollbar-thumb {
+  background: #f594bd;
+  border-radius: 4px;
+}
+
+.side-drawer::-webkit-scrollbar-track {
+  background: #222;
+}
+
+.side-drawer.open {
+  left: 0;
+}
+
+.side-drawer .close-btn {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 2rem;
+  cursor: pointer;
+}
+
+.side-drawer ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.side-drawer li {
+  margin: 1.5em 0;
+  text-align: left;
+}
+
+.side-drawer a,
+.logout-btn {
+  color: #fff;
+  text-decoration: none;
+  font-size: 1.1em;
+  padding: 0.5em 1em;
+  display: block;
+  border-radius: 4px;
+  background: none;
+  border: none;
+  text-align: left;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+
+.side-drawer a.active,
+.side-drawer a:hover,
+.logout-btn:hover {
+  background: #f594bd;
+}
+
+.drawer-link,
+.logout-btn {
+  display: block;
+  width: 100%;
+  padding: 12px 24px;
+  background: none;
+  border: none;
+  text-align: left;
+  color: #00796b;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  margin-bottom: 4px;
+}
+
+.drawer-link:hover,
+.logout-btn:hover {
+  background: #e0f7fa;
+  color: #00b8d4;
+}
+
+.drawer-user {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2rem;
+  margin-top: -30px;
+}
+
+.drawer-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #f594bd;
+  margin-bottom: 0.5rem;
+  background: #fff;
+}
+
+.drawer-username {
+  color: #fff;
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.logout-btn {
+  display: block;
+  width: 100%;
+  padding: 12px 24px;
+  background: none;
+  border: none;
+  text-align: left;
+  color: #00796b;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  margin-bottom: 4px;
+}
