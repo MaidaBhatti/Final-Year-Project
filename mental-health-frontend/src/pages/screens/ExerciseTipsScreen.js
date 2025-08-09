@@ -38,21 +38,41 @@ const ExerciseTipsScreen = () => {
     }
   };
 
-  const fetchMentalExercises = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('https://type.fit/api/quotes');
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
-      setTips(Array.isArray(data) ? data : []);
-      setError(null);
-    } catch (error) {
-      setError('Failed to fetch motivational quotes.');
-      setTips([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // const fetchMentalExercises = async () => {
+  //   try {
+  //     setLoading(true);
+  //     const response = await fetch('https://type.fit/api/quotes');
+  //     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+  //     const data = await response.json();
+  //     setTips(Array.isArray(data) ? data : []);
+  //     setError(null);
+  //   } catch (error) {
+  //     setError('Failed to fetch motivational quotes.');
+  //     setTips([]);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+const fetchMentalExercises = async () => {
+  try {
+    setLoading(true);
+    const res = await fetch('https://mwcsur-positivity-tips-api.p.rapidapi.com/tip/random', {
+      headers: {
+        'X-RapidAPI-Host': 'mwcsur-positivity-tips-api.p.rapidapi.com',
+        'X-RapidAPI-Key': 'f2dacec6dfmsh8cb7a8024826691p19b9a5jsn0be357d5031e',
+      }
+    });
+    if (!res.ok) throw new Error(`Status: ${res.status}`);
+    const tip = await res.json();
+    setTips([tip]); // adapt depending on response structure
+    setError(null);
+  } catch (err) {
+    setError('Failed to fetch positivity tip.');
+    setTips([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     if (mode === PHYSICAL) {
